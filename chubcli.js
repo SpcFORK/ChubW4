@@ -2,6 +2,8 @@
 
 // TODO: JSDOCS
 
+let chubML = require('./chubml.js');
+
 // Include the necessary modules
 const { Command } = require('commander');
 const { exec } = require('child_process');
@@ -28,7 +30,7 @@ function fsFromHost(url) {
   try {
     let fetched = fetch(url);
     return fetched.then(response => response.text());
-  
+
   } catch (error) {
     console.error(error);
     process.exit(1);
@@ -55,16 +57,6 @@ function makeDir(dir) {
  */
 function ghFromRepoAndAppendToDir(repoUrl, localDir) {
   makeDir(localDir); // Ensure the directory exists
-  let dir = path.join(localDir, path.basename(repoUrl));
-
-  // CD to the directory
-  exec(`cd ${localDir}`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(error);
-      process.exit(1);
-    }
-  
-  });
 
   // Clone the repo
   exec(`gh repo clone ${repoUrl}`, (error, stdout, stderr) => {
@@ -72,16 +64,7 @@ function ghFromRepoAndAppendToDir(repoUrl, localDir) {
       console.error(error);
       process.exit(1);
     }
-    
-  })
 
-  // CD back to the original directory
-  exec(`cd ../`, (error, stdout, stderr) => {
-    if (error) {
-      console.error(error);
-      process.exit(1);
-    }
-    
   })
 
   return dir;
@@ -99,25 +82,25 @@ async function updateChubMLSRC() {
   scl(
     `ChubML Directory Contents: ${dirInfo.join(', ')}`
   );
-  
+
   scl(
     `ChubML Repo cloned successfully: ${cp}`,
   );
-  
+
 }
 
 /**
  * Update the Susha source from the repository.
  */
 async function updateSusha() {
-  let dir = './susha'
-  let cp = ghFromRepoAndAppendToDir('SpcFORK/Susha', dir);
+  let dir = './grecha-susha'
+  let cp = ghFromRepoAndAppendToDir('SpcFORK/Grecha-Susha.js', dir);
 
   let dirInfo = fs.readdirSync(dir);
 
   scl(
     `Susha Directory Contents: ${dirInfo.join(', ')}`
-  
+
   );
 
   scl(
@@ -130,7 +113,7 @@ async function updateSusha() {
  * Main updater function for the Chub CLI.
  */
 async function updateChubCLI() {
-  
+
 }
 // ---
 
@@ -198,6 +181,73 @@ function getFilesWithSuffix(dir, suffix) {
   });
 }
 
+/**
+ * Retrieve the list of files in a directory with specific prefixes.
+ * @param {string} dir - The directory to read from.
+ * @param {string[]} prefixes - The array of prefixes to match file names against.
+ * @returns {string[]} - An array of file names with the specified prefixes.
+ */
+function getFilesWithPrefixes(dir, prefixes) {
+  const allFiles = fs.readdirSync(dir);
+
+  return allFiles.filter(file => {
+    return prefixes.some(prefix => file.startsWith(prefix));
+  });
+}
+
+/**
+  * Retrieve the list of files in a directory with specific suffixes.
+  * @param {string} dir - The directory to read from.
+  * @param {string[]} suffixes - The array of suffixes to match file names against
+  * @returns {string[]} - An array of file names with the specified suffixes.
+  */
+function getFilesWithSuffixes(dir, suffixes) {
+  const allFiles = fs.readdirSync(dir);
+
+  return allFiles.filter(file => {
+    return suffixes.some(suffix => file.endsWith(suffix));
+  });
+}
+
+function forEachFolder(dir, cb) {
+  fs.readdirSync(dir).forEach(file => {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      forEachFolder(filePath, cb);
+
+    } else {
+      cb(filePath);
+    }
+  })
+}
+
+function stageChubML() {
+  let dir = './build';
+  // Look for [.chub, .chml, .cbeam] files
+  const chubMLFiles = getFilesWithSuffixes(dir, ['.chub', '.chml', '.cbeam']);
+
+  for (const file of chubMLFiles) {
+    // Stage the chubML file
+    const chubMLPath = path.join(dir, file);
+    const chubML_ = fs.readFileSync(chubMLPath, 'utf8');
+    const chubMLHash = crypto.createHash('sha256').update(chubML_).digest('hex');
+
+    const html = chubML.CHUBParse(chubML_);
+    const htmlHash = crypto.createHash('sha256').update(html).digest('hex');
+    // Append hash to top as Comment
+    const htmlWithHash = `${html}\n\n<!-- ${chubMLHash} -->`;
+
+    // Write the html to the build directory
+    const htmlPath = path.join(dir, `${file.replace('.chub', '.html')}`);
+
+    // For each DIR; Write to Build Directory
+    fs.writeFileSync(htmlPath, htmlWithHash);
+
+  }
+
+}
+
 // ---
 
 // Define command for building the software
@@ -205,11 +255,12 @@ program
   .command('build')
   .description('Builds the software')
   .option('-e, --environment <type>', 'Specify the environment for the build', 'production')
-  .option('-c, --config <path>', 'Specify the path to the configuration file')
   .action((options) => {
     console.log(`Building for ${options.environment} environment...`);
 
-    
+    // ---
+
+
 
   });
 
@@ -229,7 +280,7 @@ program
 //   .action((options) => {
 //     console.log(`Initializing for ${options.environment} environment...`);
 
-    
+
 //   })
 
 // Parse command line arguments
