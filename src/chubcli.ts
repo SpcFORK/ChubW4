@@ -176,7 +176,7 @@ async function stageChubML(loc: string) {
   if (fs.existsSync(mdir)) {
     // Dynamic Import ChubML
     chubML = await import(mdir);
-  
+
   } else {
     // Install ChubML
     updateChubMLSRC();
@@ -184,7 +184,7 @@ async function stageChubML(loc: string) {
 
   // Get files
   let files = getFiles(loc);
-  
+
   for (const file of files) {
     // Stage the chubML file
     const chubMLPath = path.join(dir, file);
@@ -205,6 +205,48 @@ async function stageChubML(loc: string) {
 }
 // ---
 
+interface ChubConfig {
+  port: number;
+  host: string;
+  dir: string;
+  config: object;
+  buildDir: string;
+
+  // Susha Options
+  susha: boolean;
+  sushaExpress: boolean;
+  strictExpress: boolean;
+}
+
+// Usage example:
+// const chubConfig = new ChubConfig({
+//   port: 3000,
+//   host: "127.0.0.1",
+//   dir: "./",
+//   buildDir: "./dist",
+//   susha: true
+// });
+
+function makeConfig(config: ChubConfig) {
+  // Create a Chub Config
+  return {
+    port: config.port,
+    host: config.host,
+    dir: config.dir,
+    config: config.config,
+    buildDir: config.buildDir,
+    susha: config.susha,
+    sushaExpress: config.sushaExpress,
+    strictExpress: config.strictExpress,
+  }
+}
+
+// @ Command
+program
+  .name('chubCLI')
+  .version(packageJson.version)
+  .description(packageJson.description)
+
 // Define command for building the software
 program
   .command('build')
@@ -214,9 +256,27 @@ program
     'Specify the environment for the build',
     'production'
   )
+
   .option('-c, --config <path>', 'Specify the path to the configuration file')
+
+  .option('-s, --susha', 'Specify the path to the susha router')
+
+  .option('-suex, --sushaExpress', 'Specify the path to the susha router with express')
+  .option('-stex, --strictExpress', 'Specify the path to the susha router with express')
+
+  .option('-d, --debug', 'Enable debug mode')
+
   .action((options) => {
     console.log(`Building for ${options.environment} environment...`);
+
+    let config: ChubConfig = makeConfig(options)
+
+    if (config.config) {
+      let file: object = JSON.parse(fs.readFileSync(options.config, 'utf8'))
+      config = Object.assign(config, file);
+      console.log(`Configuration file loaded: ${options.config}`);
+    }
+
   });
 
 // program
