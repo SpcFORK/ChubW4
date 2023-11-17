@@ -168,10 +168,8 @@ function forEachFolder(dir: string, cb: Function) {
   })
 }
 
-async function stageChubML() {
+async function stageChubML(loc: string) {
   let dir = './build';
-  // Look for [.chub, .chml, .cbeam] files
-  const chubMLFiles = getFilesWithSuffixes(dir, ['.chub', '.chml', '.cbeam']);
 
   // Does ChubML module exist?
   let mdir = './chub-cli/ChubML/cml.js';
@@ -183,8 +181,11 @@ async function stageChubML() {
     // Install ChubML
     updateChubMLSRC();
   }
+
+  // Get files
+  let files = getFiles(loc);
   
-  for (const file of chubMLFiles) {
+  for (const file of files) {
     // Stage the chubML file
     const chubMLPath = path.join(dir, file);
     const chubML_ = fs.readFileSync(chubMLPath, 'utf8');
