@@ -1,6 +1,7 @@
 const http = require('http');
 const path = require('path');
 const fs = require('fs');
+const packageJson = require('./package.json');
 
 // TODO: JSDOCS
 
@@ -48,7 +49,9 @@ const handleRequest = (req, res) => {
 
 const server = http.createServer(handleRequest);
 
-const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`Chub Router listening at port: ${PORT}`);
+// Get PORT from package.json
+const port = packageJson.port;
+
+server.listen(port, () => {
+  console.log(`Chub Router listening at port: ${port}`);
 });
