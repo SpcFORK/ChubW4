@@ -8,8 +8,9 @@ import packageJson from '../package.json';
 import fs from 'fs';
 import path from 'path';
 import scl from './tools/scl';
+import Module from 'module';
 
-var chubml;
+var chubML: any;
 
 // Instantiate the program
 const program = new Command();
@@ -87,7 +88,10 @@ async function updateSusha() {
 }
 
 // @ Main Updater
-async function updateChubCLI() {}
+async function updateChubCLI() {
+  updateChubMLSRC();
+  updateSusha();
+}
 
 // ---
 
@@ -164,27 +168,36 @@ function forEachFolder(dir: string, cb: Function) {
   })
 }
 
-function stageChubML() {
+async function stageChubML() {
   let dir = './build';
   // Look for [.chub, .chml, .cbeam] files
   const chubMLFiles = getFilesWithSuffixes(dir, ['.chub', '.chml', '.cbeam']);
 
+  // Does ChubML module exist?
+  let mdir = './chub-cli/ChubML/cml.js';
+  if (fs.existsSync(mdir)) {
+    // Dynamic Import ChubML
+    chubML = await import(mdir);
+  
+  } else {
+    // Install ChubML
+    updateChubMLSRC();
+  }
+  
   for (const file of chubMLFiles) {
     // Stage the chubML file
     const chubMLPath = path.join(dir, file);
     const chubML_ = fs.readFileSync(chubMLPath, 'utf8');
-    const chubMLHash = crypto.createHash('sha256').update(chubML_).digest('hex');
 
     const html = chubML.CHUBParse(chubML_);
-    const htmlHash = crypto.createHash('sha256').update(html).digest('hex');
     // Append hash to top as Comment
-    const htmlWithHash = `${html}\n\n<!-- ${chubMLHash} -->`;
+    const htmlWithTag = `${html}\n\n<!-- BUILT with ChubW4 ${packageJson.version} -->`;
 
     // Write the html to the build directory
     const htmlPath = path.join(dir, `${file.replace('.chub', '.html')}`);
 
     // For each DIR; Write to Build Directory
-    fs.writeFileSync(htmlPath, htmlWithHash);
+    fs.writeFileSync(htmlPath, htmlWithTag);
 
   }
 
@@ -222,6 +235,8 @@ program
 //     console.log(`Initializing for ${options.environment} environment...`);
 
 //   })
+
+updateChubCLI()
 
 // Parse command line arguments
 program.parse(process.argv);

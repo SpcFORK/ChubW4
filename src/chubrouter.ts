@@ -4,6 +4,7 @@ import fs from 'fs';
 import packageJson from '../package.json';
 import scl from './tools/scl';
 
+
 // TODO: JSDOCS
 
 // ---
@@ -18,7 +19,7 @@ const readFile = (
   contentType: string,
   res: ServerResponse
 ) => {
-  fs.readFile(filePath, (err, data) => {
+  fs.readFile(filePath, (err: any, data: any) => {
     if (err) {
       if (contentType === 'text/html') {
         // Pass error handling for HTML content type to a function
@@ -50,7 +51,7 @@ const handleHtmlReadError = (res: ServerResponse) => {
 
 // ---
 
-const server = http.createServer((req, res) => {
+const server = http.createServer((req: any, res: any) => {
   const endpoint = req.url!.slice(1);
   const filePath = path.resolve(process.cwd(), 'build', endpoint, 'page.html');
 
