@@ -43,38 +43,76 @@ function makeDir(dir) {
   }
 }
 
-function gitFromRepoAndAppendToDir(repoUrl, localDir) {
+function ghFromRepoAndAppendToDir(repoUrl, localDir) {
   makeDir(localDir); // Ensure the directory exists
-  exec(`git clone ${repoUrl} ${localDir}`, (err, stdout, stderr) => {
-    if (err) {
-      // console.error(`Execution error: ${stderr}`);
-      scl(
-        `Execution Error: ${stderr}`,
-        '>  This is likely due to a git dependency being missing.',
-        '>  Please install git and try again.',
-        '',
-        '>  This could also be an error, chect the Repo!'
-      
-      );
-      return;
+  let dir = path.join(localDir, path.basename(repoUrl));
+
+  // CD to the directory
+  exec(`cd ${localDir}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(error);
+      process.exit(1);
     }
-    // console.log(`Repo cloned successfully: ${stdout}`);
-    scl(
-      `Repo cloned successfully: ${stdout}`,
-      `Local directory: ${localDir}`
-    
-    );
+  
   });
+
+  // Clone the repo
+  exec(`gh repo clone ${repoUrl}`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+    
+  })
+
+  // CD back to the original directory
+  exec(`cd ../`, (error, stdout, stderr) => {
+    if (error) {
+      console.error(error);
+      process.exit(1);
+    }
+    
+  })
+
+  return dir;
 }
 
+
 async function updateChubMLSRC() {
-  gitFromRepoAndAppendToDir('SpcFORK/ChubML', './chub-cli');
+  let dir = './chub-cli'
+  let cp = ghFromRepoAndAppendToDir('SpcFORK/ChubML', dir);
+
+  let dirInfo = fs.readdirSync(dir);
+
+  scl(
+    `ChubML Directory Contents: ${dirInfo.join(', ')}`
+  );
+  
+  scl(
+    `ChubML Repo cloned successfully: ${cp}`,
+  );
   
 }
 
 async function updateSusha() {
-  let susha_HOST = 'https://sushajs.replit.app/grecha.js';
-  let susha_SRC = await fsFromHost(susha_HOST);
+  let dir = './susha'
+  let cp = ghFromRepoAndAppendToDir('SpcFORK/Susha', dir);
+
+  let dirInfo = fs.readdirSync(dir);
+
+  scl(
+    `Susha Directory Contents: ${dirInfo.join(', ')}`
+  
+  );
+
+  scl(
+    `Susha Repo cloned successfully: ${cp}`,
+  );
+}
+
+// @ Main Updater
+async function updateChubCLI() {
+  
 }
 
 // ---
