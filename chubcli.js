@@ -2,6 +2,7 @@
 
 // Include the necessary modules
 const { Command } = require('commander');
+const { exec } = require('child_process');
 const process = require('process');
 const packageJson = require('./package.json');
 const fs = require('fs');
@@ -14,6 +15,14 @@ const program = new Command();
 program.version(packageJson.version);
 
 // ---
+function scl(...args) {
+
+  let header = `[ SPC ] - ${new Date().toLocaleTimeString()}\n  `
+  let comb = header + args.join('\n    -');
+  console.log(comb + '\n\n');
+
+  return comb
+}
 
 function fsFromHost(url) {
   try {
@@ -34,12 +43,38 @@ function makeDir(dir) {
   }
 }
 
-async function updateChubMLSRC() {
-  let chubML_HOST = 'https://chubml.replit.app/cml.js';
-  let chubML_SRC = await fsFromHost(chubML_HOST);
+function gitFromRepoAndAppendToDir(repoUrl, localDir) {
+  makeDir(localDir); // Ensure the directory exists
+  exec(`git clone ${repoUrl} ${localDir}`, (err, stdout, stderr) => {
+    if (err) {
+      // console.error(`Execution error: ${stderr}`);
+      scl(
+        `Execution Error: ${stderr}`,
+        '>  This is likely due to a git dependency being missing.',
+        '>  Please install git and try again.',
+        '',
+        '>  This could also be an error, chect the Repo!'
+      
+      );
+      return;
+    }
+    // console.log(`Repo cloned successfully: ${stdout}`);
+    scl(
+      `Repo cloned successfully: ${stdout}`,
+      `Local directory: ${localDir}`
+    
+    );
+  });
+}
 
-  makeDir('./chubML');
-  fs.writeFileSync('./chubML/cml.js', chubML_SRC);
+async function updateChubMLSRC() {
+  gitFromRepoAndAppendToDir('SpcFORK/ChubML', './chub-cli');
+  
+}
+
+async function updateSusha() {
+  let susha_HOST = 'https://sushajs.replit.app/grecha.js';
+  let susha_SRC = await fsFromHost(susha_HOST);
 }
 
 // ---
