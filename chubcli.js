@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// TODO: JSDOCS
+
 // Include the necessary modules
 const { Command } = require('commander');
 const { exec } = require('child_process');
