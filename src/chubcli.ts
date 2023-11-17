@@ -9,6 +9,8 @@ import fs from 'fs';
 import path from 'path';
 import scl from './tools/scl';
 
+var chubml;
+
 // Instantiate the program
 const program = new Command();
 
@@ -74,8 +76,8 @@ async function updateChubMLSRC() {
 }
 
 async function updateSusha() {
-  let dir = './susha';
-  let cp = ghFromRepoAndAppendToDir('SpcFORK/Susha', dir);
+  let dir = './Grecha-Susha';
+  let cp = ghFromRepoAndAppendToDir('SpcFORK/Grecha-Susha.js', dir);
 
   let dirInfo = fs.readdirSync(dir);
 
@@ -133,6 +135,60 @@ function getFilesWithSuffix(dir: string, suffix: string) {
   });
 }
 
+function getFilesWithPrefixes(dir: string, prefixes: Array<string>) {
+  const allFiles = fs.readdirSync(dir);
+
+  return allFiles.filter(file => {
+    return prefixes.some(prefix => file.startsWith(prefix));
+  });
+}
+
+function getFilesWithSuffixes(dir: string, suffixes: Array<string>) {
+  const allFiles = fs.readdirSync(dir);
+
+  return allFiles.filter(file => {
+    return suffixes.some(suffix => file.endsWith(suffix));
+  });
+}
+
+function forEachFolder(dir: string, cb: Function) {
+  fs.readdirSync(dir).forEach(file => {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isDirectory()) {
+      forEachFolder(filePath, cb);
+
+    } else {
+      cb(filePath);
+    }
+  })
+}
+
+function stageChubML() {
+  let dir = './build';
+  // Look for [.chub, .chml, .cbeam] files
+  const chubMLFiles = getFilesWithSuffixes(dir, ['.chub', '.chml', '.cbeam']);
+
+  for (const file of chubMLFiles) {
+    // Stage the chubML file
+    const chubMLPath = path.join(dir, file);
+    const chubML_ = fs.readFileSync(chubMLPath, 'utf8');
+    const chubMLHash = crypto.createHash('sha256').update(chubML_).digest('hex');
+
+    const html = chubML.CHUBParse(chubML_);
+    const htmlHash = crypto.createHash('sha256').update(html).digest('hex');
+    // Append hash to top as Comment
+    const htmlWithHash = `${html}\n\n<!-- ${chubMLHash} -->`;
+
+    // Write the html to the build directory
+    const htmlPath = path.join(dir, `${file.replace('.chub', '.html')}`);
+
+    // For each DIR; Write to Build Directory
+    fs.writeFileSync(htmlPath, htmlWithHash);
+
+  }
+
+}
 // ---
 
 // Define command for building the software
