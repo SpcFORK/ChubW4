@@ -1,17 +1,30 @@
 {
-  "name": "nodejs",
+  "name": "chubw4",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "tsup",
+    "postinstall": "npm run build"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@types/node": "^18.0.6",
     "commander": "^11.1.0",
     "node-fetch": "^3.2.6"
-  }
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.1",
+    "tsup": "^7.3.0",
+    "typescript": "^5.2.2"
+  },
+  "port": 3000
 }
