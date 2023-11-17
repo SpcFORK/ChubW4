@@ -9,6 +9,7 @@ const process = require('process');
 const packageJson = require('./package.json');
 const fs = require('fs');
 const path = require('path');
+const scl = require('./scl.js');
 
 // Instantiate the program
 const program = new Command();
@@ -17,15 +18,12 @@ const program = new Command();
 program.version(packageJson.version);
 
 // ---
-function scl(...args) {
 
-  let header = `[ SPC ] - ${new Date().toLocaleTimeString()}\n  `
-  let comb = header + args.join('\n    -');
-  console.log(comb + '\n\n');
-
-  return comb
-}
-
+/**
+ * Fetch file content from a remote host.
+ * @param {string} url - The URL to fetch data from.
+ * @returns {Promise<string>} The fetched text data.
+ */
 function fsFromHost(url) {
   try {
     let fetched = fetch(url);
@@ -39,12 +37,22 @@ function fsFromHost(url) {
   return null;
 }
 
+/**
+ * Creates a directory if it does not exist.
+ * @param {string} dir - The directory path to create.
+ */
 function makeDir(dir) {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir);
   }
 }
 
+/**
+ * Clone a GitHub repository and append it to a local directory.
+ * @param {string} repoUrl - The URL of the GitHub repository.
+ * @param {string} localDir - The directory to clone the repository into.
+ * @returns {string} The local directory path of the cloned repository.
+ */
 function ghFromRepoAndAppendToDir(repoUrl, localDir) {
   makeDir(localDir); // Ensure the directory exists
   let dir = path.join(localDir, path.basename(repoUrl));
@@ -79,7 +87,9 @@ function ghFromRepoAndAppendToDir(repoUrl, localDir) {
   return dir;
 }
 
-
+/**
+ * Update the ChubML source from the repository.
+ */
 async function updateChubMLSRC() {
   let dir = './chub-cli'
   let cp = ghFromRepoAndAppendToDir('SpcFORK/ChubML', dir);
@@ -96,6 +106,9 @@ async function updateChubMLSRC() {
   
 }
 
+/**
+ * Update the Susha source from the repository.
+ */
 async function updateSusha() {
   let dir = './susha'
   let cp = ghFromRepoAndAppendToDir('SpcFORK/Susha', dir);
@@ -113,10 +126,12 @@ async function updateSusha() {
 }
 
 // @ Main Updater
+/**
+ * Main updater function for the Chub CLI.
+ */
 async function updateChubCLI() {
   
 }
-
 // ---
 
 // Functions
@@ -139,16 +154,30 @@ async function updateChubCLI() {
 //   )
 // }
 
+/**
+ * Print the version of the software from the package JSON.
+ */
 function printVersion() {
   console.log(packageJson.version);
 }
 
+/**
+ * Retrieve the list of files in a directory.
+ * @param {string} dir - The directory to read from.
+ * @returns {string[]} - An array of file names.
+ */
 function getFiles(dir) {
   return fs.readdirSync(dir).filter(file => {
     return fs.statSync(path.join(dir, file)).isFile();
   });
 }
 
+/**
+ * Retrieve the list of files in a directory with a specific prefix.
+ * @param {string} dir - The directory to read from.
+ * @param {string} prefix - The prefix to match file names against.
+ * @returns {string[]} - An array of file names with the specified prefix.
+ */
 function getFilesWithPrefix(dir, prefix) {
   // Filter out nopref
   return getFiles(dir).filter(file => {
@@ -156,6 +185,12 @@ function getFilesWithPrefix(dir, prefix) {
   });
 }
 
+/**
+ * Retrieve the list of files in a directory with a specific suffix.
+ * @param {string} dir - The directory to read from.
+ * @param {string} suffix - The suffix to match file names against.
+ * @returns {string[]} - An array of file names with the specified suffix.
+ */
 function getFilesWithSuffix(dir, suffix) {
   // Filter out nopref
   return getFiles(dir).filter(file => {

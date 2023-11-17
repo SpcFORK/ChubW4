@@ -6,7 +6,12 @@ const packageJson = require('./package.json');
 // TODO: JSDOCS
 
 // ---
-
+/**
+ * Reads a file from the filesystem and sends it to the client.
+ * @param {string} filePath - The path of the file to be read.
+ * @param {string} contentType - The MIME content type of the file.
+ * @param {http.ServerResponse} res - The HTTP server response object.
+ */
 const readFile = (filePath, contentType, res) => {
   fs.readFile(filePath, (err, data) => {
     if (err) {
@@ -24,6 +29,12 @@ const readFile = (filePath, contentType, res) => {
   });
 };
 
+/**
+ * Reads a file from the filesystem and sends it to the client.
+ * @param {string} filePath - The path of the file to be read.
+ * @param {string} contentType - The MIME content type of the file.
+ * @param {http.ServerResponse} res - The HTTP server response object.
+ */
 const handleHtmlReadError = (res) => {
   const notFoundPath = './404.html';
   if (fs.existsSync(notFoundPath)) {
@@ -36,6 +47,12 @@ const handleHtmlReadError = (res) => {
 
 // ---
 
+/**
+ * Reads a file from the filesystem and sends it to the client.
+ * @param {string} filePath - The path of the file to be read.
+ * @param {string} contentType - The MIME content type of the file.
+ * @param {http.ServerResponse} res - The HTTP server response object.
+ */
 const handleRequest = (req, res) => {
   const endpoint = req.url.slice(1);
   const filePath = path.resolve(process.cwd(), 'build', endpoint, 'page.html');
