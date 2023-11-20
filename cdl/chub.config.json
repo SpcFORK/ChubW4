@@ -1,0 +1,11 @@
+{
+  "port": 3000,
+  "dir": "./",
+  "buildDir": "./build",
+  "env": "development",
+  "susha": false,
+  "sushaExpress": false,
+  "strictExpress": false,
+  "configDir": "chub.config.json",
+  "config": {}
+}

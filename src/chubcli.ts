@@ -294,6 +294,7 @@ interface SCR_ {
 }
 
 async function stageChubML(loc: string, config: ChubConfig) {
+  const startime = Date.now();
   const buildDir = config.buildDir ?? './build';
   dirCheck(buildDir);
 
@@ -351,10 +352,9 @@ async function stageChubML(loc: string, config: ChubConfig) {
     await buildChubsite(_RECACHE_FILES_, buildDir, 'susha', config);
   }
 
-  else {
-    console.error('No chubML config found.');
-    process.exit(1);
-  }
+  scl(
+    `Chubsite built in ${(Date.now() - startime) / 1000} seconds.`
+  )
 }
 
 function sushaRouterStructure(files: string[], buildDir: string, config: ChubConfig) {
@@ -422,40 +422,93 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
       `  - Ext: ${placeObj.ext}`,
     );
 
-    let trail_ = '/** ChubFN */\n'
+    let trail_ = '/** ChubFN */\n';
+    let m_ = placeObj?.fileName.replace('.html', '');
+    let __STARTER__: string | number| undefined;
+    let __SUSHA_ROUTER__ = '__SUSHA_ROUTER__'
 
     try {
       if (placeObj.html) {
         if (config.config.Into_Inline) {
           SCR.body.push(trail_ + `
-            const ${place} tag('place',
+            const ${m_} tag('place',
               (\`${placeObj.html}\`)
             )
           `)
         }
+
         else if (config.config.Into_FETCH_calls) {
           SCR.body.push(
-            trail_ + `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`
+            trail_ + `const ${m_} = await (await fetch('${placeObj?.fileName}')).text();`
           );
         }
+
+        { // Starter Block
+          __STARTER__
+            ? 0
+            : __STARTER__ = SCR.body.push(
+              `window.${__SUSHA_ROUTER__} = {}`
+            )
+        }
+
+        SCR.body.push(
+          `window.${__SUSHA_ROUTER__}.${m_} = ${m_};`
+        )
+
+        // @ Router
+        if (placeObj.fileName.startsWith('##')) {
+          SCR.router[
+            placeObj.fileName
+              .replace('.html', '')
+              .replace(/(&##){1}/, '/')
+          ] = placeObj.html
+        }
       }
+      
+      
     } catch (e) {
       console.error(e);
       process.exit(1);
     }
+
   }
 
   scl('Building chubsite with Susha & Express...');
 
-  let Thesript: string;
+  let Thescript = '';
 
   SCR.body.forEach((line) => {
     // NOW BUILD SCRIPT
-    if (line.startsWith('const') && line.includes('ChubFN')) {
-      // console.log(line);
-      Thesript += line + '\n';
-    }
+    Thescript += line + '\n';
+    
+    // if (line.startsWith('const') && line.includes('ChubFN')) {
+    //   // console.log(line);
+    // }
+      
   })
+
+  // Save to file;
+  if (Thescript) {
+    fs.writeFileSync(
+      path.join(buildDir, 'index.js'),
+      Thescript
+
+    );
+
+    console.log('Compiled Susha chubsite.');
+  }
+
+  // Create Entrypoint
+
+  const entrypoint = path.join(buildDir, 'page.html');
+  fs.writeFileSync(
+    entrypoint,
+    
+  )
+  
+  console.log('Susha chubsite is ready to be served.');
+  
+  
 }
 
 async function buildChubsite(files: string[], buildDir: string, type: string, config: ChubConfig) {
@@ -495,6 +548,7 @@ interface ChubConfig {
   susha: boolean;
   sushaExpress: boolean;
   strictExpress: boolean;
+  configDir: string;
 }
 
 
@@ -528,17 +582,18 @@ interface ConfigOptions {
   strictExpress?: boolean;
 }
 
-function makeConfig(config: ConfigOptions): ChubConfig {
-  // Create a Chub Config
+function makeConfig(options?: Partial<ChubConfig>): ChubConfig {
+  if (!options) options = {}
   return {
-    port: config.port ?? 3000,
-    dir: config.dir ?? "./",
-    config: config.config ?? {},
-    buildDir: config.buildDir ?? './build',
-    env: config.env ?? 'development',
-    susha: config.susha ?? false,
-    sushaExpress: config.sushaExpress ?? false,
-    strictExpress: config.strictExpress ?? false,
+    port: options.port ?? 3000,
+    dir: options.dir ?? './',
+    buildDir: options.buildDir ?? './build',
+    env: options.env ?? 'development',
+    susha: options.susha ?? false,
+    sushaExpress: options.sushaExpress ?? false,
+    strictExpress: options.strictExpress ?? false,
+    configDir: options.configDir ?? 'chub.config.json',
+    config: options.config ?? {},
   };
 }
 
@@ -562,18 +617,18 @@ program
     'production'
   )
 
-  .option('-c, --config <path>', 'Specify the path to the configuration file')
-
-  .option('-s, --susha', 'Specify the path to the susha router')
-
-  .option('-suex, --sushaExpress', 'Specify the path to the susha router with express')
-  .option('-stex, --strictExpress', 'Specify the path to the susha router with express')
-
+  .option('-p, --port <number>', 'set the port', '3000')
+  .option('-d, --dir <path>', 'set the directory', './')
+  .option('-b, --buildDir <path>', 'set the build directory', './build')
+  .option('-e, --env <environment>', 'set the environment', 'development')
+  .option('--susha', 'enable susha', true)
+  .option('--sushaExpress', 'enable sushaExpress', false)
+  .option('--strictExpress', 'enable strictExpress', false)
+  .option('-c, --config <path>', 'set the config path', 'chub.config.json')
   .option('-d, --debug', 'Enable debug mode')
-
   .action((loc, options, command) => {
 
-    console.log(loc)
+    // console.log(loc, options, command);
 
     if (!fs.existsSync(loc)) {
       console.error('Directory does not exist');
@@ -582,12 +637,13 @@ program
 
     let chubConfig: ChubConfig;
     if (options.config) {
-      const configPath = path.join(loc, options.config);
+      var configPath = path.join(loc, options?.config || 'chub.config.json');
       if (!fs.existsSync(configPath)) {
         console.error('Configuration file does not exist');
-        process.exit(1);
+        // Make one
+        fs.writeFileSync(configPath, JSON.stringify(makeConfig(), null, 2));
       }
-      const config = require(configPath);
+      const config = JSON.parse(fs.readFileSync(configPath).toString());
       chubConfig = makeConfig(config);
       console.log('Configuration loaded from:', configPath);
 
@@ -632,7 +688,7 @@ program
   .action(() => {
     console.log(icons.icon1_CowLogo);
     console.log('\n', '\n', 'Updating...', '\n');
-    
+
     updateChubCLI();
   });
 
