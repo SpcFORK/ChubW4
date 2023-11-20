@@ -630,7 +630,9 @@ program
   .command('update')
   .description('Updates the software')
   .action(() => {
-    console.log('Updating...');
+    console.log(icons.icon1_CowLogo);
+    console.log('\n', '\n', 'Updating...', '\n');
+    
     updateChubCLI();
   });
 
