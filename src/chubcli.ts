@@ -178,6 +178,11 @@ function getFiles(dir: string) {
   });
 }
 
+function getAllFiles(dir: string) {
+  return fs.readdirSync(dir)
+}
+
+
 function getFilesWithPrefix(dir: string, prefix: string) {
   // Filter out nopref
   return getFiles(dir).filter((file) => {
@@ -247,55 +252,153 @@ function dirCheck(dir: string) {
   }
 }
 
-async function stageChubML(loc: string) {
-  let dir = './build';
+interface SCR_ {
+  header: string[],
+  body: string[],
+  router: { [key: string]: string }
+}
 
-  dirCheck(dir)
+async function stageChubML(loc: string, config: ChubConfig) {
+  const buildDir = config.buildDir ?? './build';
+  dirCheck(buildDir);
 
-  // Does ChubML module exist?
-  // go up to ../../chubml/cml.js
-  let mdir = path.join(__dirname, '..', 'chubml', 'cml.js')
-  
-  console.log(mdir);
-  if (fs.existsSync(mdir)) {
-    // Dynamic Import ChubML
-    chubML = await import(mdir);
-
-  } else {
-    // Install ChubML
+  let chubMLModulePath = path.join(__dirname, '..', 'chubml', 'cml.js');
+  if (!fs.existsSync(chubMLModulePath)) {
+    scl('ChubML not present? Installing...');
     await updateChubMLSRC();
   }
 
-  // Get files
-  let files = getFiles(loc);
+  chubML = await import(chubMLModulePath).catch((error) => {
+    console.error('Failed to import ChubML:', error.message);
+    process.exit(1);
+  });
 
-  console.log(files, loc);
+  let files = getFiles(loc)
+  let Chubfiles = files.filter(file => file.endsWith('.chub'));
 
-  for (const file of files) {
-    // Stage the chubML file
-    const chubMLPath = path.join(dir, file);
+  if (Chubfiles.length === 0) {
+    console.error('No chub files found in', loc);
+    process.exit(1);
+  }
 
-    // Contains suffix
-    console.log(file)
-    if (!file.endsWith('.chub')) {
-      continue
-    }
-    
-    const chubML_ = fs.readFileSync(path.join(loc, file), 'utf8');
-    console.log(chubML);
+  for (const file of Chubfiles) {
+    const chubMLContent = fs.readFileSync(path.join(loc, file), 'utf8');
+    const html = chubML.CHUBparse(chubMLContent);
 
-    const html = chubML.CHUBparse(chubML_);
-    // Append hash to top as Comment
-    const htmlWithTag = `${html}\n\n<!-- BUILT with ChubW4 ${packageJson.version} -->`;
+    const envTag = config.env === 'development'
+      ? `<!-- DEVELOPMENT MODE -->\n`
+      : '';
 
-    // Write the html to the build directory
-    const htmlPath = path.join(dir, `${file.replace('.chub', '.html')}`);
+    const htmlWithTag = `${envTag}${html}\n\n<!-- BUILT with ChubW4 ${packageJson.version} -->`;
 
-    // For each DIR; Write to Build Directory
-    fs.writeFileSync(htmlPath, htmlWithTag);
+    const htmlPath = path.join(buildDir, file.replace('.chub', '.html'));
+
+    fs.writeFileSync(htmlPath, htmlWithTag.trim());
+
+    console.log(`File staged: ${htmlPath}`);
+  }
+
+  if (config.susha) {
+    scl('Building chubsite with Susha & Express...');
+    await buildChubsite(files, buildDir, 'sushaExpress');
 
   }
 
+  else if (config.strictExpress) {
+    scl('Building chubsite with strictly Express...');
+    await buildChubsite(files, buildDir, 'strictExpress');
+  }
+
+  else if (config.sushaExpress) {
+    scl('Building chubsite with Susha & HTTP...');
+    await buildChubsite(files, buildDir, 'susha');
+  }
+
+  else {
+    console.error('No chubML config found.');
+    process.exit(1);
+  }
+}
+
+function sushaRouterStructure(files: string[], buildDir: string) {
+  // Dynamically build and save a Router.index.js;
+  // Idea:
+  //  - Loop through files
+  //    - If DIR, add DIR to router
+  //    - If FILE, add FILE to router
+  //      - If in dir, put in router.
+  //      - Put HTML in body as {};
+
+  let SCR: SCR_ = {
+    header: [
+      '// Susha Express Router Structure',
+      '// Generated with ChubW4',
+      '// https://github.com/Spcfork/Chubw4',
+      '\n\n'
+    ],
+    body: [],
+    router: {},
+  }
+
+  for (const file of files) {
+    const dir = path.dirname(file);
+    const fileName = path.basename(file);
+    const ext = path.extname(file);
+
+    if (ext === '.html') {
+      const html = fs.readFileSync(file, 'utf8');
+      const htmlPath = path.join(buildDir, fileName.replace('.html', '.js'));
+      fs.writeFileSync(htmlPath, html);
+
+      SCR.body.push[
+        `const ${fileName.replace('.html', '')} = await (await fetch('${fileName}')).text()  ;`
+      ]
+
+      console.log(`File staged: ${htmlPath}`);
+    }
+  }
+
+  for (const file of files) {
+    const dir = path.dirname(file);
+    const fileName = path.basename(file);
+    const ext = path.extname(file);
+
+    if (ext === '.html') {
+      const html = fs.readFileSync(file, 'utf8');
+      const htmlPath = path.join(buildDir, fileName.replace('.html', '.js'));
+      fs.writeFileSync(htmlPath, html);
+
+      SCR.body.push(`const`);
+
+      console.log(`File staged: ${htmlPath}`);
+    }
+  }
+}
+
+async function buildChubsite(files: string[], buildDir: string, config: string) {
+  function buildChubsiteSusha(files: string[], buildDir: string) {
+    return new Promise((resolve, reject) => {
+      const chubsite = sushaRouterStructure(files, buildDir);
+    })
+  }
+
+  switch (config) {
+    case 'sushaExpress':
+      await buildChubsiteSusha(files, buildDir);
+      break;
+    case 'strictExpress':
+      await buildChubsiteStrict(files, buildDir);
+      break;
+    case 'susha':
+      await buildChubsiteSusha(files, buildDir);
+      break;
+    default:
+      console.error('No chubML config found.');
+      process.exit(1);
+
+  }
+
+  scl('Chubsite built.');
 }
 // ---
 
@@ -304,7 +407,7 @@ interface ChubConfig {
   dir: string;
   config: object;
   buildDir: string;
-
+  env: string;
   // Susha Options
   susha: boolean;
   sushaExpress: boolean;
@@ -320,17 +423,29 @@ interface ChubConfig {
 //   susha: true
 // });
 
-function makeConfig(config: ChubConfig) {
+interface ConfigOptions {
+  port?: number;
+  dir?: string;
+  config?: Record<string, unknown>;
+  buildDir?: string;
+  env?: string;
+  susha?: boolean;
+  sushaExpress?: boolean;
+  strictExpress?: boolean;
+}
+
+function makeConfig(config: ConfigOptions): ChubConfig {
   // Create a Chub Config
   return {
-    port: config.port,
-    dir: config.dir,
-    config: config.config || {},
-    buildDir: config.buildDir || './build',
-    susha: config.susha || false,
-    sushaExpress: config.sushaExpress || false,
-    strictExpress: config.strictExpress || false,
-  }
+    port: config.port ?? 3000,
+    dir: config.dir ?? "./",
+    config: config.config ?? {},
+    buildDir: config.buildDir ?? './build',
+    env: config.env ?? 'development',
+    susha: config.susha ?? false,
+    sushaExpress: config.sushaExpress ?? false,
+    strictExpress: config.strictExpress ?? false,
+  };
 }
 
 console.log('ChubW4 - CLI\n');
@@ -366,7 +481,36 @@ program
 
     console.log(loc)
 
-    stageChubML(loc);
+    if (!fs.existsSync(loc)) {
+      console.error('Directory does not exist');
+      process.exit(1);
+    }
+
+    let chubConfig: ChubConfig;
+    if (options.config) {
+      const configPath = path.join(loc, options.config);
+      if (!fs.existsSync(configPath)) {
+        console.error('Configuration file does not exist');
+        process.exit(1);
+      }
+      const config = require(configPath);
+      chubConfig = makeConfig(config);
+      console.log('Configuration loaded from:', configPath);
+
+    } else {
+      chubConfig = makeConfig({
+        port: options?.port,
+        dir: loc,
+        buildDir: options?.buildDir,
+        env: options?.environment,
+        susha: options?.susha,
+        sushaExpress: options?.sushaExpress,
+        strictExpress: options?.strictExpress,
+        config: options?.config,
+      });
+    }
+
+    stageChubML(loc, chubConfig);
 
   });
 
