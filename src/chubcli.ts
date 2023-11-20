@@ -255,6 +255,7 @@ function dirCheck(dir: string) {
 interface SCR_ {
   header: string[],
   body: string[],
+  places: { [key: string]: { [innerKey: string]: string } },
   router: { [key: string]: string }
 }
 
@@ -320,7 +321,7 @@ async function stageChubML(loc: string, config: ChubConfig) {
   }
 }
 
-function sushaRouterStructure(files: string[], buildDir: string) {
+function sushaRouterStructure(files: string[], buildDir: string, config: ChubConfig) {
   // Dynamically build and save a Router.index.js;
   // Idea:
   //  - Loop through files
@@ -337,60 +338,97 @@ function sushaRouterStructure(files: string[], buildDir: string) {
       '\n\n'
     ],
     body: [],
+    places: {},
     router: {},
   }
 
   for (const file of files) {
-    const dir = path.dirname(file);
-    const fileName = path.basename(file);
-    const ext = path.extname(file);
+    const
+      dir = path.dirname(file),
+      fileName = path.basename(file),
+      ext = path.extname(file)
+
 
     if (ext === '.html') {
       const html = fs.readFileSync(file, 'utf8');
-      const htmlPath = path.join(buildDir, fileName.replace('.html', '.js'));
-      fs.writeFileSync(htmlPath, html);
+      const htmlPath = path.join(buildDir, fileName.replace('.html', '.cache'));
 
-      SCR.body.push[
-        `const ${fileName.replace('.html', '')} = await (await fetch('${fileName}')).text()  ;`
-      ]
+      if (config.config?.cache) {
+        fs.writeFileSync(htmlPath, html);
+      }
 
       console.log(`File staged: ${htmlPath}`);
+
+      SCR.places[fileName] = {
+        dir,
+        ext,
+        fileName,
+        htmlPath,
+        html
+      }
+    }
+
+  }
+
+  if (Object.keys(SCR.places).length === 0) {
+    console.error('No chub files found in', loc);
+    process.exit(1);
+  }
+
+  scl('-=-  Compile BEGIN!!!  -=-');
+
+  for (const place in SCR.places) {
+    const placeObj = SCR.places?.[place];
+    console.log(
+      `Compiling ${placeObj.fileName}...`,
+      `  - Dir: ${placeObj.dir}`,
+      `  - Ext: ${placeObj.ext}`,
+    );
+
+    try {
+      if (placeObj.html) {
+        if (config.config.Into_Inline) {
+          SCR.body.push(`
+            const ${place} tag('place',
+              (\`${placeObj.html}\`)
+            )
+          `);
+        }
+        else if (config.config.Into_FETCH_calls) {
+          SCR.body.push(
+            `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`
+          );
+        }
+      }
+    } catch (e) {
+      console.error(e);
+      process.exit(1);
     }
   }
 
-  for (const file of files) {
-    const dir = path.dirname(file);
-    const fileName = path.basename(file);
-    const ext = path.extname(file);
+  scl('Building chubsite with Susha & Express...');
 
-    if (ext === '.html') {
-      const html = fs.readFileSync(file, 'utf8');
-      const htmlPath = path.join(buildDir, fileName.replace('.html', '.js'));
-      fs.writeFileSync(htmlPath, html);
+  SCR.body.forEach((line) => {
 
-      SCR.body.push(`const`);
-
-      console.log(`File staged: ${htmlPath}`);
-    }
-  }
+  })
 }
 
-async function buildChubsite(files: string[], buildDir: string, config: string) {
-  function buildChubsiteSusha(files: string[], buildDir: string) {
+async function buildChubsite(files: string[], buildDir: string, type: string, config: ChubConfig) {
+  function buildChubsiteSusha(files: string[], buildDir: string, config: ChubConfig) {
     return new Promise((resolve, reject) => {
-      const chubsite = sushaRouterStructure(files, buildDir);
+      const chubsite = sushaRouterStructure(files, buildDir, config);
     })
   }
 
-  switch (config) {
+  switch (type) {
     case 'sushaExpress':
-      await buildChubsiteSusha(files, buildDir);
+      await buildChubsiteSushaExpress(files, buildDir, config);
       break;
     case 'strictExpress':
-      await buildChubsiteStrict(files, buildDir);
+      await buildChubsiteStrict(files, buildDir, config);
       break;
     case 'susha':
-      await buildChubsiteSusha(files, buildDir);
+      await buildChubsiteSusha(files, buildDir, config);
       break;
     default:
       console.error('No chubML config found.');
@@ -405,7 +443,7 @@ async function buildChubsite(files: string[], buildDir: string, config: string) 
 interface ChubConfig {
   port: number;
   dir: string;
-  config: object;
+  config: advConfig;
   buildDir: string;
   env: string;
   // Susha Options
@@ -414,14 +452,25 @@ interface ChubConfig {
   strictExpress: boolean;
 }
 
-// Usage example:
-// const chubConfig = new ChubConfig({
-//   port: 3000,
-//   host: "127.0.0.1",
-//   dir: "./",
-//   buildDir: "./dist",
-//   susha: true
-// });
+
+/*  ADVANCED CONFIG  */
+
+/** ADVANCED CONFIG JSON structure.
+  * 
+  * - Susha Options
+  * - HTML bundling
+  */
+interface advConfig {
+  Into_Inline?: boolean;
+  Into_FETCH_calls?: boolean;
+  bundle?: 'html' | 'js' | 'experementalChubScript'
+  cache?: boolean;
+  susha?: {
+    // Susha Options
+    ElementWrap_HTML?: boolean;
+
+  }
+}
 
 interface ConfigOptions {
   port?: number;
