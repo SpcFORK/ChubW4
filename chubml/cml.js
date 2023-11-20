@@ -47,7 +47,7 @@
 
       *Array matcher
       arrMatch
-
+  
       *Parser:
       parse()
         -> sortInd()
@@ -55,61 +55,61 @@
     END
   =-=-=-=--=-=-=-=-==-=-=-=--=-=-=-=-=
   TEMPLATE:
-
+  
   html;
     // HEADER
     head;
       meta %charset=utf-8;
       meta %name=viewport %content=width|edevice-width;
-
+      
       title;
         "ChubBuild";
-
+      
       link %href=style.css %rel=stylesheet %type=text/css;
     //
-
+    
     // BODY
     body;
       article .descArticle;
-
+      
       // Sick!
       // So comments work!
-
+      
         h3;
           "Welcome to the";
           span;
             "CHUB WEBSITE!";
         // 
-
+        
         p;
           "The newest and best Markdown Language simplifier!";
           br;
           "As of '9:30 AM, 2023-05-15', ChubML can build most website features.";
           br;
-
+          
           "It can create";
           span .coolStuffspan;
             "COOL STUFF really quickly!";
-
+          
           br;
           br;
-
+  
           "It really is better than normal HTML!";
-
+  
           br;
-
+          
           "Due to its quick syntax, you can form tags";
           span .coolStuffspan;
             "within minutes, allowing you to create websites rapidly and efficently!";
         br;
-
+      
       // 
-
+  
     {=
       src="test.js"
     =}
-
-
+  
+  
   =-=-=-=--=-=-=-=-=
 */
 
@@ -158,7 +158,7 @@ Potentially:
   => Check if you made a typo.
   => Check if you did not add the directory to the file.
   => Check if you did every thing else right.
-
+  
   => If all else. cry :(
 `),
 }
@@ -223,7 +223,7 @@ c;
 */
 
 /** Quicker query selector.
-
+  
 function $(a) {
 * @param {string} a - The selector for document.querySelector to look for.
   ...
@@ -250,7 +250,7 @@ var arrMatch = (str, arr) => {
 }
 
 /** Handles the string to be parsed into sortInd().
-
+  
 function parse(a) {
 * @param {string} a - The ChubML syntax string to be parsed into a HTML string.
   ...
@@ -365,7 +365,7 @@ var CHUBparse = (a) => {
   })
 
   /** Parses an object into ChubML.
-
+    
   function stringi(contentObj, vor) {
   * @param {object} contentObj - The object Tree.
   * @param {string} vor - TODO: add implement for vor.
@@ -750,7 +750,7 @@ var CHUBparse = (a) => {
             @param {number} n - Number of breaks to create.
 
             @example
-
+            
             *br;
               "3";
 
@@ -772,9 +772,9 @@ var CHUBparse = (a) => {
           /* 
           I've been real lazy and sick lately, so I've decided to take the easy route.
           I'll use .repeat() to repeat the break tag n times.
-
+          
           <br/><br/><br/>
-
+          
           and then chop off the characters at the start and 2 at the end.
 
           br/><br/><br
@@ -1635,10 +1635,10 @@ var CHUBparse = (a) => {
           <style>
             .coolStuffspan {
               display: inline-block;
-
+              
               /* padding-left: var(--space-char-w); */
               /* padding-right: var(--space-char-w); */
-
+              
               position: relative;
               animation: wavy-animation 2s infinite;
             }
@@ -1721,7 +1721,7 @@ var CHUBparse = (a) => {
           <style>
             .${ident.id} {
               display: inline-block;
-
+              
               height: ${tmlo
             };
             }
@@ -1791,7 +1791,7 @@ var CHUBparse = (a) => {
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           // fboxStyle = `style="
@@ -1813,7 +1813,7 @@ var CHUBparse = (a) => {
               box-shadow: 6px 6px 0px 0px #000;
               display: flex;
               padding: 15px;
-
+              
               width: min-content;
             }
           </style>
@@ -1875,7 +1875,7 @@ var CHUBparse = (a) => {
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           // fboxStyle = `style="
@@ -1896,7 +1896,7 @@ var CHUBparse = (a) => {
               box-shadow: 0px 6px 0px 0px #000;
               display: flex;
               padding: 15px;
-
+              
               width: min-content;
             }
           </style>
@@ -1956,7 +1956,7 @@ var CHUBparse = (a) => {
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           fboxStyle = `style="
@@ -1966,7 +1966,7 @@ var CHUBparse = (a) => {
           box-shadow: 6px 6px 0px 0px #000;
           display: flex;
           padding: 15px;
-
+          
           width: min-content;
           "`
 
@@ -2012,7 +2012,7 @@ var CHUBparse = (a) => {
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           fboxStyle = `style="
@@ -2022,7 +2022,7 @@ var CHUBparse = (a) => {
           box-shadow: 0px 6px 0px 0px #000;
           display: flex;
           padding: 15px;
-
+          
           width: min-content;
           "`
 
@@ -2062,13 +2062,13 @@ var CHUBparse = (a) => {
             | ACDD |
             |  ABE |
             '------'
-
+             
 
             Struct:
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           fboxStyle = `style="
@@ -2120,7 +2120,7 @@ var CHUBparse = (a) => {
               div;
                 div;
                   {{INSERT}};
-
+            
           */
 
           fboxStyle = `style="
@@ -2274,9 +2274,9 @@ var CHUBparse = (a) => {
 var CHUBECSS;
 
 /** Get a tree based off indent nesting.
-
+  
 function sortInd(contents) {
-* @param {string} contents - collapses a string into an object by indentation syntax.
+* @param {object} contents - collapses a object into an object by indentation syntax.
 * @returns {object} object- returns an object with indentation syntax.
 * */
 function sortInd(contents) {
@@ -3179,6 +3179,7 @@ function CHUBfax(tex, sep = " ") {
   modtxt = modtxt
     .replace("=", "|e")
     .replace(";", "|col")
+    .replace("\"", "|qw")
     .replace(sep, "|")
 
   return modtxt
@@ -3196,6 +3197,7 @@ function attrSyn(tex) {
 
       .replace(/\|e/gm, "=")
       .replace(/\|col/gm, ";")
+      .replace(/\|qw/gm, "\"")
       .replace(/\|/gm, " ")
 
       .replace(" spcfork.Pipe.Token ", "|")

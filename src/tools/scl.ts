@@ -4,8 +4,9 @@
  * @returns The combined logged string.
  */
 export default function scl(...args: any[]): string {
-  let header = `[ SPC ] - ${new Date().toLocaleTimeString()}\n  `;
+  let ms = new Date().getMilliseconds();
+  let header = `[ SPC ] - ${new Date().toLocaleTimeString()} (t:${ms})\n  `;
   let comb = header + args.join('\n    -');
-  console.log(comb + '\n\n');
+  console.log(comb + '\n');
   return comb;
 }
