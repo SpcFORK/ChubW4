@@ -9,7 +9,41 @@ import fs from 'fs';
 import path from 'path';
 import scl from './tools/scl';
 import axios from 'axios';
+import readline from 'readline';
 // import Module from 'module';
+
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+interface PROMPT_OPTIONS {
+  enter?: string;
+  exit?: string;
+}
+
+function PROMPT(txt, options?: PROMPT_OPTIONS) {
+  return new Promise((resolve, reject) => {
+    // If user presses Enter, resolve the promise with the entered value
+    // Else, reject the promise with an error message
+    rl.question(txt, (answer) => {
+      if (options && options.enter) {
+        if (answer === options.enter) {
+          resolve(answer);
+        } else {
+          reject(new Error(
+            `Invalid input: ${answer}. Expected: ${options.enter}`
+          ));
+        }
+      } else {
+        resolve(answer);
+      }
+    
+    });
+  });
+}
+
+import icons from './icows/icows'
 
 var chubML: any;
 
@@ -299,20 +333,22 @@ async function stageChubML(loc: string, config: ChubConfig) {
     console.log(`File staged: ${htmlPath}`);
   }
 
+  let _RECACHE_FILES_ = Chubfiles.map(file => path.join(buildDir, file.replace('.chub', '.html'));
+
   if (config.susha) {
     scl('Building chubsite with Susha & Express...');
-    await buildChubsite(files, buildDir, 'sushaExpress');
+    await buildChubsite(_RECACHE_FILES_, buildDir, 'sushaExpress', config);
 
   }
 
   else if (config.strictExpress) {
     scl('Building chubsite with strictly Express...');
-    await buildChubsite(files, buildDir, 'strictExpress');
+    await buildChubsite(_RECACHE_FILES_, buildDir, 'strictExpress', config);
   }
 
   else if (config.sushaExpress) {
     scl('Building chubsite with Susha & HTTP...');
-    await buildChubsite(files, buildDir, 'susha');
+    await buildChubsite(_RECACHE_FILES_, buildDir, 'susha', config);
   }
 
   else {
@@ -396,7 +432,8 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
         }
         else if (config.config.Into_FETCH_calls) {
           SCR.body.push(
-            `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`
+            `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`+
+            
           );
         }
       }
@@ -408,8 +445,11 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
 
   scl('Building chubsite with Susha & Express...');
 
+  let Thesript: string;
+  
   SCR.body.forEach((line) => {
-
+    // NOW BUILD SCRIPT
+    if (line.startsWith('const')) {Thesript}
   })
 }
 
