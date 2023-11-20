@@ -411,6 +411,7 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
     process.exit(1);
   }
 
+  console.log(icons.logo2_Chubw4Text, '\n\n')
   scl('-=-  Compile BEGIN!!!  -=-');
 
   for (const place in SCR.places) {
