@@ -289,6 +289,7 @@ function dirCheck(dir: string) {
 interface SCR_ {
   header: string[],
   body: string[],
+  asy: string[],
   places: { [key: string]: { [innerKey: string]: string } },
   router: { [key: string]: string }
 }
@@ -376,6 +377,7 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
     body: [],
     places: {},
     router: {},
+    asy: []
   }
 
   for (const file of files) {
@@ -424,7 +426,7 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
 
     let trail_ = '/** ChubFN */\n';
     let m_ = placeObj?.fileName.replace('.html', '');
-    let __STARTER__: string | number| undefined;
+    let __STARTER__: string | number | undefined;
     let __SUSHA_ROUTER__ = '__SUSHA_ROUTER__'
 
     try {
@@ -438,7 +440,7 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
         }
 
         else if (config.config.Into_FETCH_calls) {
-          SCR.body.push(
+          SCR.asy.push(
             trail_ + `const ${m_} = await (await fetch('${placeObj?.fileName}')).text();`
           );
         }
@@ -452,20 +454,19 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
         }
 
         SCR.body.push(
-          `window.${__SUSHA_ROUTER__}.${m_} = ${m_};`
+          `window.${__SUSHA_ROUTER__}.${m_} = ${placeObj.html};`
         )
 
         // @ Router
         if (placeObj.fileName.startsWith('##')) {
           SCR.router[
-            placeObj.fileName
-              .replace('.html', '')
+            m_
               .replace(/(&##){1}/, '/')
           ] = placeObj.html
         }
       }
-      
-      
+
+
     } catch (e) {
       console.error(e);
       process.exit(1);
@@ -480,35 +481,50 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
   SCR.body.forEach((line) => {
     // NOW BUILD SCRIPT
     Thescript += line + '\n';
-    
+
     // if (line.startsWith('const') && line.includes('ChubFN')) {
     //   // console.log(line);
     // }
-      
+
   })
+
+  // Create Entrypoint
+  // /data/templates/chubML/loaders.js
+  let aes = fs.readFileSync(
+    path.join(
+      __dirname,
+      'data',
+      'templates',
+      'chubML',
+      'loaders.js'
+    ),
+  ).toString(); 
+  
+  aes = aes.replace('// {{INJECTHERE2}}', Thescript);
 
   // Save to file;
   if (Thescript) {
     fs.writeFileSync(
       path.join(buildDir, 'index.js'),
-      Thescript
+      (
+        Thescript ? `(new Promise((res, rej) => {\n${Thescript}\n})`
+          : ''
+      )
 
     );
 
     console.log('Compiled Susha chubsite.');
   }
-
-  // Create Entrypoint
-
+  
   const entrypoint = path.join(buildDir, 'page.html');
   fs.writeFileSync(
     entrypoint,
-    
+
   )
-  
+
   console.log('Susha chubsite is ready to be served.');
-  
-  
+
+
 }
 
 async function buildChubsite(files: string[], buildDir: string, type: string, config: ChubConfig) {
