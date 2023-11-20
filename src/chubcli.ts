@@ -22,7 +22,7 @@ interface PROMPT_OPTIONS {
   exit?: string;
 }
 
-function PROMPT(txt, options?: PROMPT_OPTIONS) {
+function PROMPT(txt: string, options?: PROMPT_OPTIONS) {
   return new Promise((resolve, reject) => {
     // If user presses Enter, resolve the promise with the entered value
     // Else, reject the promise with an error message
@@ -38,7 +38,7 @@ function PROMPT(txt, options?: PROMPT_OPTIONS) {
       } else {
         resolve(answer);
       }
-    
+
     });
   });
 }
@@ -333,7 +333,7 @@ async function stageChubML(loc: string, config: ChubConfig) {
     console.log(`File staged: ${htmlPath}`);
   }
 
-  let _RECACHE_FILES_ = Chubfiles.map(file => path.join(buildDir, file.replace('.chub', '.html'));
+  let _RECACHE_FILES_ = Chubfiles.map(file => path.join(buildDir, file.replace('.chub', '.html')));
 
   if (config.susha) {
     scl('Building chubsite with Susha & Express...');
@@ -407,7 +407,7 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
   }
 
   if (Object.keys(SCR.places).length === 0) {
-    console.error('No chub files found in', loc);
+    console.error('No chub files found in', buildDir);
     process.exit(1);
   }
 
@@ -421,19 +421,20 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
       `  - Ext: ${placeObj.ext}`,
     );
 
+    let trail_ = '/** ChubFN */\n'
+
     try {
       if (placeObj.html) {
         if (config.config.Into_Inline) {
-          SCR.body.push(`
+          SCR.body.push(trail_ + `
             const ${place} tag('place',
               (\`${placeObj.html}\`)
             )
-          `);
+          `)
         }
         else if (config.config.Into_FETCH_calls) {
           SCR.body.push(
-            `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`+
-            
+            trail_ + `const ${placeObj?.fileName.replace('.html', '')} = await (await fetch('${placeObj?.fileName}')).text();`
           );
         }
       }
@@ -446,10 +447,13 @@ function sushaRouterStructure(files: string[], buildDir: string, config: ChubCon
   scl('Building chubsite with Susha & Express...');
 
   let Thesript: string;
-  
+
   SCR.body.forEach((line) => {
     // NOW BUILD SCRIPT
-    if (line.startsWith('const')) {Thesript}
+    if (line.startsWith('const') && line.includes('ChubFN')) {
+      // console.log(line);
+      Thesript += line + '\n';
+    }
   })
 }
 
@@ -462,10 +466,10 @@ async function buildChubsite(files: string[], buildDir: string, type: string, co
 
   switch (type) {
     case 'sushaExpress':
-      await buildChubsiteSushaExpress(files, buildDir, config);
+      // await buildChubsiteSushaExpress(files, buildDir, config);
       break;
     case 'strictExpress':
-      await buildChubsiteStrict(files, buildDir, config);
+      // await buildChubsiteStrict(files, buildDir, config);
       break;
     case 'susha':
       await buildChubsiteSusha(files, buildDir, config);
